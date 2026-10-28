@@ -48,6 +48,7 @@ async function shot(browser, html, file) {
   const suites = [
     ['EVIDENCIA 2 - Pruebas unitarias (Paso 8)', 'npm test (Mocha) - test/test.js', 'npm test', 'evidencia2_pruebas_unitarias.jpg'],
     ['EVIDENCIA 3 - Pruebas de integración', 'npx jest tests/integration --runInBand --env=node --verbose --silent --reporters=default (Jest + Supertest + socket.io-client)', 'npx jest tests/integration --runInBand --env=node --verbose --silent --reporters=default', 'evidencia3_pruebas_integracion.jpg'],
+    ['EVIDENCIA 5 - Escaneo Snyk (Paso 11)', 'snyk test - dependencias tras reparar críticas/altas', 'npx snyk test', 'evidencia5_snyk.jpg'],
     ['EVIDENCIA 4 - Pruebas end-to-end con Playwright', 'npx playwright test --project=chromium (frontend y backend reales)', 'npx playwright test --project=chromium', 'evidencia4_pruebas_e2e_playwright.jpg'],
   ];
   for (const [label, title, cmd, file] of suites) {
