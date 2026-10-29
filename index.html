@@ -4,22 +4,33 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>UNA Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
+    :root { --rosa: #e8589a; --lila: #a78bfa; --texto: #4a2545; }
     * { box-sizing: border-box; }
-    body { margin: 0; color: #10231e; background: #f4f8f6; font: 16px system-ui, sans-serif; }
-    header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem max(1rem, calc((100vw - 900px) / 2)); background: #0b3d2e; color: white; }
-    header h1 { margin: 0; font-size: 1.3rem; }
-    .user { display: flex; align-items: center; gap: .8rem; }
-    .user img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+    body { margin: 0; color: var(--texto); background: linear-gradient(160deg, #fff5fa, #f3ecff) fixed; font: 16px 'Quicksand', system-ui, sans-serif; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem max(1rem, calc((100vw - 900px) / 2));
+      background: linear-gradient(90deg, var(--rosa), var(--lila)); color: white; box-shadow: 0 6px 20px #e8589a3d; border-radius: 0 0 1.5rem 1.5rem; }
+    header h1 { margin: 0; font-size: 1.4rem; }
+    header h1::before { content: '💖 '; }
+    .user { display: flex; align-items: center; gap: .8rem; font-weight: 600; }
+    .user img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
+    .user a { padding: .35rem .8rem; border-radius: 999px; background: #ffffff33; text-decoration: none; }
+    .user a:hover { background: #ffffff55; }
     a { color: inherit; }
     main { max-width: 900px; margin: auto; padding: 1rem; }
-    #status { min-height: 1.5rem; color: #9a3412; }
+    #status { min-height: 1.5rem; color: #b4236a; font-weight: 600; }
     #messages { list-style: none; padding: 0; margin: 1rem 0 6rem; }
-    #messages li { background: white; border: 1px solid #dce9e2; border-radius: .7rem; margin: .5rem 0; padding: .7rem 1rem; overflow-wrap: anywhere; }
-    #messages img, #messages video, #messages iframe { max-width: 100%; }
-    form { position: fixed; bottom: 0; left: 0; right: 0; background: #e6f1eb; padding: .8rem; display: flex; gap: .5rem; justify-content: center; }
-    form input { width: min(720px, 75vw); padding: .8rem; border: 1px solid #9fbaaa; border-radius: .5rem; font: inherit; }
-    form button { border: 0; border-radius: .5rem; background: #0b6b4c; color: white; padding: .8rem 1.2rem; font: inherit; cursor: pointer; }
+    #messages li { background: white; border: 2px solid #ffe0ee; border-radius: 1.2rem 1.2rem 1.2rem .3rem; margin: .6rem 0; padding: .7rem 1.1rem;
+      overflow-wrap: anywhere; box-shadow: 0 4px 14px #e8589a1a; }
+    #messages img, #messages video, #messages iframe { max-width: 100%; border-radius: .8rem; }
+    form { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffffe6; backdrop-filter: blur(6px); padding: .8rem; display: flex; gap: .6rem; justify-content: center;
+      border-top: 2px solid #ffd3e6; }
+    form input { width: min(720px, 75vw); padding: .8rem 1.1rem; border: 2px solid #f7bfd9; border-radius: 999px; font: inherit; color: var(--texto); background: #fffafd; }
+    form input:focus { outline: none; border-color: var(--lila); box-shadow: 0 0 0 4px #a78bfa33; }
+    form button { border: 0; border-radius: 999px; background: linear-gradient(90deg, var(--rosa), var(--lila)); color: white; padding: .8rem 1.5rem; font: inherit; font-weight: 700;
+      cursor: pointer; box-shadow: 0 6px 16px #e8589a47; }
     form button:disabled { opacity: .5; cursor: not-allowed; }
   </style>
 </head>
@@ -73,7 +84,7 @@
         status.textContent = error.message.includes('iniciar sesión') ? 'La sesión terminó. Inicie sesión de nuevo.' : 'No se pudo conectar al chat. Actualice la página para reintentar.';
       });
       socket.on('Evento-Mensaje-Server', show);
-      transmit = text => { if (socket.connected) socket.emit('Evento-Mensaje-Server', JSON.stringify({ mensaje: text, color: '#0b6b4c' })); };
+      transmit = text => { if (socket.connected) socket.emit('Evento-Mensaje-Server', JSON.stringify({ mensaje: text, color: '#d6336c' })); };
     }
     function usePusher(config) {
       const pusher = new Pusher(config.key, { cluster: config.cluster, channelAuthorization: { endpoint: '/api/pusher/auth' } });
@@ -84,7 +95,7 @@
       channel.bind('pusher:subscription_error', connectionError);
       channel.bind(config.event, show);
       transmit = text => fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mensaje: text, color: '#0b6b4c' }) }).then(response => {
+        body: JSON.stringify({ mensaje: text, color: '#d6336c' }) }).then(response => {
           if (response.status === 401) location.href = '/?login_required=1';
           else if (!response.ok) status.textContent = 'No se pudo enviar el mensaje. Intente de nuevo.';
         }).catch(() => { status.textContent = 'No se pudo enviar el mensaje. Intente de nuevo.'; });

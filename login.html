@@ -4,13 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Iniciar sesión | UNA Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #edf6f0; color: #17372c; font: 16px system-ui, sans-serif; }
-    main { width: min(420px, calc(100% - 2rem)); padding: 2rem; background: white; border: 1px solid #d3e4d9; border-radius: 1rem; box-shadow: 0 18px 45px #0b3d2e17; }
-    h1 { margin: 0 0 .5rem; }
-    p { line-height: 1.5; }
-    a { display: inline-block; margin-top: 1rem; padding: .8rem 1.1rem; border-radius: .5rem; background: #0b6b4c; color: white; text-decoration: none; font-weight: 600; }
-    #notice { color: #9a3412; min-height: 1.5rem; }
+    :root { --rosa: #e8589a; --lila: #a78bfa; --texto: #4a2545; --suave: #fff0f7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; color: var(--texto);
+      background: radial-gradient(circle at 15% 20%, #ffd6e8 0, transparent 40%), radial-gradient(circle at 85% 80%, #e4d7ff 0, transparent 45%), #fff5fa;
+      font: 16px 'Quicksand', system-ui, sans-serif; }
+    main { width: min(420px, calc(100% - 2rem)); padding: 2.4rem 2rem; text-align: center; background: #ffffffd9; border: 2px solid #ffd3e6;
+      border-radius: 2rem; box-shadow: 0 20px 50px #e8589a2e; backdrop-filter: blur(6px); }
+    h1 { margin: 0 0 .6rem; font-size: 2.1rem; background: linear-gradient(90deg, var(--rosa), var(--lila)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    h1::before { content: '💖  '; -webkit-text-fill-color: initial; }
+    p { line-height: 1.6; margin: .4rem 0; }
+    a { display: inline-block; margin-top: 1.2rem; padding: .85rem 1.8rem; border-radius: 999px; background: linear-gradient(90deg, var(--rosa), var(--lila));
+      color: white; text-decoration: none; font-weight: 700; box-shadow: 0 8px 20px #e8589a47; transition: transform .15s, box-shadow .15s; }
+    a:hover, a:focus-visible { transform: translateY(-2px); box-shadow: 0 12px 26px #e8589a66; outline: 3px solid #fff; outline-offset: 2px; }
+    #notice { color: #b4236a; min-height: 1.5rem; font-weight: 600; }
   </style>
 </head>
 <body>
