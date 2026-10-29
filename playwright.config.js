@@ -16,7 +16,7 @@ module.exports = defineConfig({
   ],
   // levanta el chat (frontend + backend) si no esta corriendo
   webServer: {
-    command: 'npm start',
+    command: 'node tests/helpers/e2e-server.js',
     url: 'http://localhost:3000',
     reuseExistingServer: true,
     timeout: 30000,

@@ -1,74 +1,80 @@
 <!doctype html>
-<html>
-  <head>
-    <title>Chat Socket.IO UNA</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      form input { border: 0; padding: 10px;}
-      form button { width: 10%; background: rgb(130, 224, 255);  border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
-      #messages { margin-bottom: 40px }
-      #nombre, #m { display: inline-block;}
-      #m {width: 69%; margin-right: 4px;}
-      #nombre {width: 20%}
-    </style>
-  </head>
-  <body>
-    <ul id="messages"></ul>
-    <form action="">
-      <input id="nombre" autocomplete="off" placeholder="Username"/>
-      <input id="m" autocomplete="off" placeholder="Escriba un mensaje" /><button>Send</button>
-    </form>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.js"></script>
-    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
-    <script>
-
-    var colorHexTxt = "";
-
-    // genera colores aleatorios en hexadeximal
-    function getRandomColor() {
-        var letters = '0123456789ABCDEF';
-        var color = '#';
-        for (var i = 0; i < 6; i++) {
-          color += letters[Math.floor(Math.random() * 16)];
-        }
-
-        return color;
-     }
-
-      $(function () {
-        var socket = io();
-
-        // emite evento al servidor
-        
-        $('form').submit(function(){
-            var nombreTxt = $('#nombre').val() || "Anomimo";
-            var mensajeTxt = $('#m').val();
-
-            if (colorHexTxt == "") {
-                colorHexTxt = getRandomColor();
-            }
-
-            var jsonMsg = { nombre: nombreTxt, mensaje: mensajeTxt, color: colorHexTxt };
-            socket.emit('Evento-Mensaje-Server', JSON.stringify(jsonMsg));
-            $('#m').val('');
-            return false;
-        });
-
-        // ... (resto del código) ...
-
-        socket.on('Evento-Mensaje-Server', function(msg){
-            var msgJson = JSON.parse(msg);
-            var mensajeDisplay = "<b style='color:"+ msgJson.color +"'>" + msgJson.nombre + "</b>: " + msgJson.mensaje;
-            $('#messages').append($('<li>').html(mensajeDisplay));
-            window.scrollTo(0, document.body.scrollHeight);
-        });
-
-      });
-    </script>
-  </body>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UNA Chat</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #10231e; background: #f4f8f6; font: 16px system-ui, sans-serif; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem max(1rem, calc((100vw - 900px) / 2)); background: #0b3d2e; color: white; }
+    header h1 { margin: 0; font-size: 1.3rem; }
+    .user { display: flex; align-items: center; gap: .8rem; }
+    .user img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+    a { color: inherit; }
+    main { max-width: 900px; margin: auto; padding: 1rem; }
+    #status { min-height: 1.5rem; color: #9a3412; }
+    #messages { list-style: none; padding: 0; margin: 1rem 0 6rem; }
+    #messages li { background: white; border: 1px solid #dce9e2; border-radius: .7rem; margin: .5rem 0; padding: .7rem 1rem; overflow-wrap: anywhere; }
+    #messages img, #messages video, #messages iframe { max-width: 100%; }
+    form { position: fixed; bottom: 0; left: 0; right: 0; background: #e6f1eb; padding: .8rem; display: flex; gap: .5rem; justify-content: center; }
+    form input { width: min(720px, 75vw); padding: .8rem; border: 1px solid #9fbaaa; border-radius: .5rem; font: inherit; }
+    form button { border: 0; border-radius: .5rem; background: #0b6b4c; color: white; padding: .8rem 1.2rem; font: inherit; cursor: pointer; }
+    form button:disabled { opacity: .5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>UNA Chat</h1>
+    <div class="user"><img id="picture" alt="" hidden><span id="identity">Cargando...</span><a href="/logout">Cerrar sesión</a></div>
+  </header>
+  <main>
+    <p id="status" role="status" aria-live="polite"></p>
+    <ul id="messages" aria-label="Mensajes"></ul>
+  </main>
+  <form id="form">
+    <input id="message" autocomplete="off" placeholder="Escriba un mensaje" aria-label="Mensaje" required>
+    <button id="send" type="submit" disabled>Enviar</button>
+  </form>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const status = document.getElementById('status');
+    const send = document.getElementById('send');
+    const message = document.getElementById('message');
+    fetch('/api/me').then(response => {
+      if (response.status === 401) { location.href = '/?login_required=1'; return null; }
+      if (!response.ok) throw new Error('No se pudo cargar la identidad.');
+      return response.json();
+    }).then(user => {
+      if (!user) return;
+      document.getElementById('identity').textContent = user.name || user.email || 'Usuario';
+      if (user.picture && /^https:\/\//.test(user.picture)) {
+        const picture = document.getElementById('picture');
+        picture.src = user.picture;
+        picture.hidden = false;
+      }
+    }).catch(() => { status.textContent = 'No se pudo cargar la identidad. Actualice la página para reintentar.'; });
+    const socket = io({ reconnectionAttempts: 3 });
+    socket.on('connect', () => { status.textContent = ''; send.disabled = false; });
+    socket.on('disconnect', () => { status.textContent = 'Se perdió la conexión. Intentando reconectar...'; send.disabled = true; });
+    socket.on('connect_error', error => {
+      send.disabled = true;
+      status.textContent = error.message.includes('iniciar sesión') ? 'La sesión terminó. Inicie sesión de nuevo.' : 'No se pudo conectar al chat. Actualice la página para reintentar.';
+    });
+    document.getElementById('form').addEventListener('submit', event => {
+      event.preventDefault();
+      const text = message.value.trim();
+      if (!text || !socket.connected) return;
+      socket.emit('Evento-Mensaje-Server', JSON.stringify({ mensaje: text, color: '#0b6b4c' }));
+      message.value = '';
+    });
+    socket.on('Evento-Mensaje-Server', raw => {
+      const data = JSON.parse(raw);
+      const item = document.createElement('li');
+      item.innerHTML = `<b style="color:${data.color}">${data.nombre}</b>: ${data.mensaje}`;
+      document.getElementById('messages').append(item);
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+  </script>
+</body>
 </html>

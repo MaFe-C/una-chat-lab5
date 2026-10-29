@@ -1,16 +1,23 @@
 // Pruebas de integracion: backend (express + socket.io) colaborando con una-lib.
 const request = require('supertest');
 const { io: Client } = require('socket.io-client');
-const createApp = require('../../server');
+const createApp = require('../../chat-server');
 const unalib = require('../../libs/unalib');
 
 const EVENTO = 'Evento-Mensaje-Server';
+const cookie = 'lab_test_session=1';
+const auth = {
+  getUser: req => (req.headers.cookie || '').includes(cookie) ? { sub: 'google|ana', name: 'Ana', email: 'ana@example.com' } : null,
+  login: (req, res) => res.redirect('/chat'),
+  callback: (req, res) => res.redirect('/chat'),
+  logout: (req, res) => res.redirect('/')
+};
 
 describe('integracion backend + una-lib', () => {
   let server, url;
 
   beforeAll((done) => {
-    server = createApp();
+    server = createApp({ auth });
     server.http.listen(0, () => {
       url = 'http://localhost:' + server.http.address().port;
       done();
@@ -24,7 +31,7 @@ describe('integracion backend + una-lib', () => {
   // envia un mensaje por Socket.IO (la entrada real del backend) y espera la respuesta
   function enviar(mensaje, extra) {
     return new Promise((resolve, reject) => {
-      const socket = Client(url, { transports: ['websocket'], forceNew: true });
+      const socket = Client(url, { transports: ['websocket'], forceNew: true, extraHeaders: { Cookie: cookie } });
       socket.on('connect_error', reject);
       socket.on(EVENTO, (msg) => {
         socket.close();
@@ -36,11 +43,25 @@ describe('integracion backend + una-lib', () => {
     });
   }
 
-  test('GET / responde 200 con la pagina del chat (HTTP con Supertest)', async () => {
-    const res = await request(server.http).get('/');
+  test('sin sesion no se puede abrir el chat ni consultar la identidad', async () => {
+    expect((await request(server.http).get('/chat')).status).toBe(302);
+    expect((await request(server.http).get('/api/me')).status).toBe(401);
+  });
+
+  test('sin sesion Socket.IO rechaza la conexion', async () => {
+    const socket = Client(url, { transports: ['websocket'], forceNew: true, reconnection: false });
+    const message = await new Promise(resolve => socket.on('connect_error', error => resolve(error.message)));
+    socket.close();
+    expect(message).toMatch(/iniciar sesión/);
+  });
+
+  test('GET /chat responde 200 con la pagina del chat solo con sesion', async () => {
+    const res = await request(server.http).get('/chat').set('Cookie', cookie);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/html/);
-    expect(res.text).toContain('Chat Socket.IO UNA');
+    expect(res.text).toContain('UNA Chat');
+    const me = await request(server.http).get('/api/me').set('Cookie', cookie);
+    expect(me.body.name).toBe('Ana');
   });
 
   test('URL de imagen valida: el backend la acepta y devuelve una etiqueta <img>', async () => {
@@ -86,11 +107,16 @@ describe('integracion backend + una-lib', () => {
   });
 
   test('un mensaje que no es JSON no rompe el servidor', async () => {
-    const socket = Client(url, { transports: ['websocket'], forceNew: true });
+    const socket = Client(url, { transports: ['websocket'], forceNew: true, extraHeaders: { Cookie: cookie } });
     const r = await new Promise((resolve) => {
       socket.on(EVENTO, (msg) => { socket.close(); resolve(JSON.parse(msg)); });
       socket.on('connect', () => socket.emit(EVENTO, '<script>alert(1)</script>'));
     });
     expect(r.mensaje).not.toContain('<script');
+  });
+
+  test('el nombre del mensaje procede de la sesion y no del cliente', async () => {
+    const r = await enviar('hola', { nombre: 'Intruso' });
+    expect(r.nombre).toBe('Ana');
   });
 });

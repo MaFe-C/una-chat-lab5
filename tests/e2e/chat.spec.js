@@ -6,13 +6,13 @@ const VIDEO_YT = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
 const SCRIPT = "<script>alert('Inyección de script');</script>";
 
 async function enviar(page, texto) {
-  await page.getByPlaceholder('Username').fill('Tester');
   await page.getByPlaceholder('Escriba un mensaje').fill(texto);
-  await page.getByRole('button', { name: 'Send' }).click();
+  await page.getByRole('button', { name: 'Enviar' }).click();
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/chat');
+  await expect(page.getByText('Tester')).toBeVisible();
 });
 
 test('muestra una imagen y termina de cargar', async ({ page }) => {

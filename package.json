@@ -4,7 +4,7 @@
     "socket.io": "*"
   },
   "scripts": {
-    "start": "node server.js",
+    "start": "node chat-server.js",
     "test": "mocha",
     "test:integration": "jest tests/integration --runInBand --env=node",
     "test:e2e": "playwright test --project=chromium",

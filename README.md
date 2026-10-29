@@ -1,21 +1,60 @@
-# UNA Chat - Laboratorio 5 (Seguridad Informática)
+# UNA Chat
 
-Chat Socket.IO con validación segura de mensajes (`libs/unalib.js`).
+Chat de Express y Socket.IO con validación segura de mensajes y autenticación social mediante Auth0. El acceso a `/chat`, `/api/me` y la conexión Socket.IO requiere una sesión válida. El nombre mostrado en cada mensaje proviene de la identidad verificada, no del navegador.
 
-- Los mensajes de texto, el nombre y el color se escapan/sanean: un `<script>` se muestra como texto y nunca se ejecuta.
-- Una URL de imagen (jpg, jpeg, gif, png, bmp, webp) se muestra como `<img>`.
-- Una URL de video (YouTube, mp4, webm, ogg) se muestra con un reproductor.
+## Configurar Auth0
 
-## Ejecutar
-    npm install
-    npm start            # http://localhost:3000
+1. Cree una cuenta personal en [Auth0](https://auth0.com/) y una aplicación **Regular Web Application**.
+2. En **Authentication > Social**, habilite al menos una conexión social (por ejemplo Google) y actívela para esta aplicación. Si utiliza claves propias del proveedor, configure también el callback que Auth0 indique en el panel.
+3. En la configuración de la aplicación añada estas URLs exactas, separadas por comas cuando haya más de una:
+
+   | Campo de Auth0 | Local | Vercel |
+   | --- | --- | --- |
+   | Allowed Callback URLs | `http://localhost:3000/callback` | `https://SU-DOMINIO.vercel.app/callback` |
+   | Allowed Logout URLs | `http://localhost:3000/` | `https://SU-DOMINIO.vercel.app/` |
+   | Allowed Web Origins | `http://localhost:3000` | `https://SU-DOMINIO.vercel.app` |
+
+4. Guarde los cambios. Copie **Domain**, **Client ID** y **Client Secret** a las variables de entorno del servidor. El Client Secret nunca debe estar en código del navegador ni en Git.
+
+El inicio de sesión usa Authorization Code con PKCE, `state` y `nonce`. El servidor verifica la firma RS256 y los datos del token de identidad antes de establecer una cookie cifrada y HttpOnly. Si el usuario cancela o Auth0 devuelve un error, la página muestra un mensaje y permite reintentar.
+
+## Ejecutar localmente
+
+Requiere Node.js 22 o posterior.
+
+```powershell
+Copy-Item .env.example .env
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+```
+
+Complete `.env` con los datos personales de Auth0 y use el valor aleatorio generado como `SESSION_SECRET`. Luego:
+
+```powershell
+npm ci
+npm start
+```
+
+Abra `http://localhost:3000`. Inicie sesión con la conexión social, compruebe que aparece su nombre en `/chat` y use **Cerrar sesión**. `.env` está excluido de Git.
+
+## Desplegar en Vercel
+
+1. Importe este repositorio en Vercel con la raíz del proyecto en `.`. `app.js` es la entrada de Express para Vercel.
+2. Configure `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `SESSION_SECRET` y `APP_BASE_URL` en las variables de entorno de **Production**. `APP_BASE_URL` debe ser el origen HTTPS exacto de su despliegue, sin barra final. Genere una clave de sesión distinta de la local.
+3. Añada el dominio de Vercel a los tres campos de URLs permitidas de Auth0 indicados arriba y despliegue de nuevo.
+4. Pruebe en Vercel iniciar sesión, regresar autenticado, ver la identidad y cerrar sesión. Repita la prueba de cancelación o error y guarde capturas como evidencia.
+
+**Transporte del chat:** el servidor Socket.IO se inicia con `npm start` en un proceso persistente. La entrada `app.js` de Vercel sirve la interfaz y el flujo de Auth0; la conexión Socket.IO del Laboratorio 5 necesita un servicio de tiempo real compatible para funcionar de forma continua en un despliegue escalado. Esta limitación no afecta el flujo de inicio y cierre de sesión, que es el criterio de despliegue de US-01.
 
 ## Pruebas
-    npm test                                                    # unitarias (Mocha)
-    npx jest tests/integration --runInBand --env=node           # integración (Jest + Supertest + socket.io-client)
-    npx playwright install chromium
-    npx playwright test --project=chromium --headed             # end-to-end (levanta el chat solo si no está activo)
-    npx playwright show-report
 
-`scripts/evidencia1.js` reproduce la inyección contra la versión vulnerable (carpeta `antes/` del enunciado) y
-`scripts/make-evidence.js` genera las capturas JPG.
+```powershell
+npm test
+npm run test:integration
+npx playwright test --project=chromium
+```
+
+Las pruebas integradas usan claves y sesiones de prueba; no requieren una cuenta real. Las pruebas de navegador arrancan un servidor de prueba. Las pruebas de Auth0 real y Vercel requieren las cuentas y variables de entorno del estudiante.
+
+## Seguridad del chat heredada del Laboratorio 5
+
+`libs/unalib.js` escapa texto, nombre y color. Las URLs de imagen o video admitidas se muestran como medios; los esquemas peligrosos y el HTML arbitrario se tratan como texto. Las pruebas unitarias, integradas y de navegador verifican estos casos.
