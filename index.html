@@ -37,6 +37,7 @@
     <button id="send" type="submit" disabled>Enviar</button>
   </form>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
   <script>
     const status = document.getElementById('status');
     const send = document.getElementById('send');
@@ -54,26 +55,49 @@
         picture.hidden = false;
       }
     }).catch(() => { status.textContent = 'No se pudo cargar la identidad. Actualice la página para reintentar.'; });
-    const socket = io({ reconnectionAttempts: 3 });
-    socket.on('connect', () => { status.textContent = ''; send.disabled = false; });
-    socket.on('disconnect', () => { status.textContent = 'Se perdió la conexión. Intentando reconectar...'; send.disabled = true; });
-    socket.on('connect_error', error => {
-      send.disabled = true;
-      status.textContent = error.message.includes('iniciar sesión') ? 'La sesión terminó. Inicie sesión de nuevo.' : 'No se pudo conectar al chat. Actualice la página para reintentar.';
-    });
-    document.getElementById('form').addEventListener('submit', event => {
-      event.preventDefault();
-      const text = message.value.trim();
-      if (!text || !socket.connected) return;
-      socket.emit('Evento-Mensaje-Server', JSON.stringify({ mensaje: text, color: '#0b6b4c' }));
-      message.value = '';
-    });
-    socket.on('Evento-Mensaje-Server', raw => {
-      const data = JSON.parse(raw);
+    function show(raw) {
+      const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
       const item = document.createElement('li');
       item.innerHTML = `<b style="color:${data.color}">${data.nombre}</b>: ${data.mensaje}`;
       document.getElementById('messages').append(item);
       window.scrollTo(0, document.body.scrollHeight);
+    }
+    const connectionError = () => { send.disabled = true; status.textContent = 'No se pudo conectar al chat. Actualice la página para reintentar.'; };
+    let transmit = null;
+    function useSocketIo() {
+      const socket = io({ reconnectionAttempts: 3 });
+      socket.on('connect', () => { status.textContent = ''; send.disabled = false; });
+      socket.on('disconnect', () => { status.textContent = 'Se perdió la conexión. Intentando reconectar...'; send.disabled = true; });
+      socket.on('connect_error', error => {
+        send.disabled = true;
+        status.textContent = error.message.includes('iniciar sesión') ? 'La sesión terminó. Inicie sesión de nuevo.' : 'No se pudo conectar al chat. Actualice la página para reintentar.';
+      });
+      socket.on('Evento-Mensaje-Server', show);
+      transmit = text => { if (socket.connected) socket.emit('Evento-Mensaje-Server', JSON.stringify({ mensaje: text, color: '#0b6b4c' })); };
+    }
+    function usePusher(config) {
+      const pusher = new Pusher(config.key, { cluster: config.cluster, channelAuthorization: { endpoint: '/api/pusher/auth' } });
+      pusher.connection.bind('connected', () => { status.textContent = ''; });
+      pusher.connection.bind('error', connectionError);
+      const channel = pusher.subscribe(config.channel);
+      channel.bind('pusher:subscription_succeeded', () => { status.textContent = ''; send.disabled = false; });
+      channel.bind('pusher:subscription_error', connectionError);
+      channel.bind(config.event, show);
+      transmit = text => fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mensaje: text, color: '#0b6b4c' }) }).then(response => {
+          if (response.status === 401) location.href = '/?login_required=1';
+          else if (!response.ok) status.textContent = 'No se pudo enviar el mensaje. Intente de nuevo.';
+        }).catch(() => { status.textContent = 'No se pudo enviar el mensaje. Intente de nuevo.'; });
+    }
+    fetch('/api/config').then(response => response.ok ? response.json() : Promise.reject())
+      .then(config => config.transport === 'pusher' ? usePusher(config) : useSocketIo())
+      .catch(connectionError);
+    document.getElementById('form').addEventListener('submit', event => {
+      event.preventDefault();
+      const text = message.value.trim();
+      if (!text || !transmit || send.disabled) return;
+      transmit(text);
+      message.value = '';
     });
   </script>
 </body>

@@ -43,7 +43,13 @@ Abra `http://localhost:3000`. Inicie sesión con la conexión social, compruebe 
 3. Añada el dominio de Vercel a los tres campos de URLs permitidas de Auth0 indicados arriba y despliegue de nuevo.
 4. Pruebe en Vercel iniciar sesión, regresar autenticado, ver la identidad y cerrar sesión. Repita la prueba de cancelación o error y guarde capturas como evidencia.
 
-**Transporte del chat:** el servidor Socket.IO se inicia con `npm start` en un proceso persistente. La entrada `app.js` de Vercel sirve la interfaz y el flujo de Auth0; la conexión Socket.IO del Laboratorio 5 necesita un servicio de tiempo real compatible para funcionar de forma continua en un despliegue escalado. Esta limitación no afecta el flujo de inicio y cierre de sesión, que es el criterio de despliegue de US-01.
+**Transporte del chat:** las funciones de Vercel no mantienen conexiones Socket.IO, así que el chat desplegado usa [Pusher Channels](https://pusher.com) (plan gratuito):
+
+1. Cree una app de Channels en Pusher y copie `app_id`, `key`, `secret` y `cluster`.
+2. Agréguelos en Vercel como `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET` y `PUSHER_CLUSTER`, y vuelva a desplegar.
+3. El canal es privado (`private-una-chat`): `/api/pusher/auth` y `/api/messages` exigen la sesión de Auth0, y el servidor valida cada mensaje y le pone el nombre de la sesión. `PUSHER_SECRET` nunca llega al navegador; la `key` es pública por diseño.
+
+En local, con esas variables vacías, se usa Socket.IO con `npm start`.
 
 ## Pruebas
 
