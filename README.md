@@ -1,5 +1,7 @@
 # UNA Chat
 
+**URL desplegada:** https://una-chat-lab5.vercel.app
+
 Chat de Express y Socket.IO con validación segura de mensajes y autenticación social mediante Auth0. El acceso a `/chat`, `/api/me` y la conexión Socket.IO requiere una sesión válida. El nombre mostrado en cada mensaje proviene de la identidad verificada, no del navegador.
 
 ## Configurar Auth0
